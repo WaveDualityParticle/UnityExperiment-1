@@ -1,0 +1,66 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class GravitySimulator : MonoBehaviour
+{
+    public GameObject sphereA; // Central object //m1
+    public GameObject sphereB; // Orbiting object //m2
+   
+
+    public float gravitationalConstant = 6.674f; // Gravitational constant (in m^3 kg^-1 s^-2)
+    public float orbitDistance = 5f; // Base distance between the two objects
+
+    private Rigidbody rbA;
+    private Rigidbody rbB;
+    
+
+    void Start()
+    {
+        //rigidbody components of both spheres 
+        rbA = sphereA.GetComponent<Rigidbody>();
+        rbB = sphereB.GetComponent<Rigidbody>();
+        
+
+        // Calculate the radii of both spheres
+        float radiusA = sphereA.GetComponent<SphereCollider>().radius * sphereA.transform.localScale.x;
+        float radiusB = sphereB.GetComponent<SphereCollider>().radius * sphereB.transform.localScale.x;
+        float sphereRadiiSum = radiusA + radiusB;
+
+        //initial orbit distance, or else they will stick together and orbit
+        sphereB.transform.position = sphereA.transform.position + new Vector3(orbitDistance + sphereRadiiSum, 0, 0);
+
+        // Calculate the initial orbital velocity for Sphere B
+        float initialOrbitalVelocity = Mathf.Sqrt(gravitationalConstant * rbA.mass / (orbitDistance + sphereRadiiSum));
+
+        // Apply the initial velocity perpendicular to the distance vector (along the Z-axis for a circular orbit)
+        rbB.velocity = new Vector3(0, 0, initialOrbitalVelocity);
+        
+
+        rbA.drag = 0;
+        rbA.angularDrag = 0;
+        rbB.drag = 0;
+        rbB.angularDrag = 0;
+    }
+
+    void FixedUpdate()
+    {
+        // the gravitational force b/n sphereA and sphereB
+        Vector3 direction = sphereB.transform.position - sphereA.transform.position;
+        float distance = direction.magnitude;
+ 
+         //prevention of division of 0
+        if (distance == 0) return;
+
+        //calculation of grav force derived from newtons formula of gravitation
+        float forceMagnitude = gravitationalConstant * (rbA.mass * rbB.mass) / (distance * distance);
+        Vector3 forceDirection = direction.normalized;
+
+        //force applied to both sphere, this is also an error since both spheres are applying a force that means that the central mass will not be stationary.
+        // so to fix it i could try rbA.AddForce(force * 1.5) or smthn????
+        Vector3 force = forceDirection * forceMagnitude;
+        rbA.AddForce(force);
+        rbB.AddForce(-force);
+       
+    }
+}
